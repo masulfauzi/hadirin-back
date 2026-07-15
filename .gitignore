@@ -23,4 +23,5 @@ go.work.sum
 # Planning docs kept local-only
 dump/*
 *.md
+!README.md
 prompt.txt
