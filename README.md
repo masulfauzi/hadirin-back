@@ -72,12 +72,19 @@ hadirin-back/
     │   ├── handler.go
     │   ├── service.go
     │   └── routes.go         # tidak punya model.go/repository.go — data user dipinjam dari modul user
-    └── user/                 # CONTOH ACUAN pola modular lengkap
-        ├── model.go
-        ├── repository.go
-        ├── service.go
-        ├── handler.go
-        └── routes.go
+    ├── user/                 # CONTOH ACUAN pola modular lengkap
+    │   ├── model.go
+    │   ├── repository.go
+    │   ├── service.go
+    │   ├── handler.go
+    │   └── routes.go
+    ├── role/                 # roles + user_roles (assign/revoke role ke user)
+    ├── menu/                 # menus + role_menu_permissions
+    ├── division/             # divisions + division_schedules (jadwal per hari)
+    ├── harilibur/            # hari_libur
+    ├── karyawan/             # karyawan
+    ├── presensi/             # presensi (CRUD dasar, tanpa logika GPS check-in/out)
+    └── ijin/                 # ijin + status_ijin & jenis_ijin (read-only)
 ```
 
 > **Modul `user` adalah contoh acuan.** Kalau bingung bagaimana menulis modul baru, tiru persis pola di `modules/user/`.
@@ -136,8 +143,9 @@ Semua endpoint **wajib** mengembalikan format yang sama, dengan 4 field: `succes
 - Endpoint terlindungi (butuh token): dibungkus `middleware.Protected(cfg.JWTSecret)` di `routes.go` masing-masing modul, contoh lihat [modules/user/routes.go](modules/user/routes.go).
 - Di handler yang terlindungi, ID user yang sedang login diambil dengan:
   ```go
-  userID := c.Locals("user_id").(uint)
+  userID := c.Locals("user_id").(uuid.UUID)
   ```
+- Semua primary key & foreign key di database bertipe **UUID** (`gen_random_uuid()`), bukan auto-increment. Di kode Go dipakai `uuid.UUID` dari `github.com/google/uuid`.
 
 ---
 
@@ -219,8 +227,11 @@ Lihat [.env.example](.env.example) untuk daftar lengkap. Yang penting:
 
 Hal-hal berikut sengaja belum dikerjakan, akan menyusul di issue terpisah:
 
-- Modul presensi, rekap, dan ijin (ikuti panduan "Cara Menambah Fitur/Modul Baru" di atas saat waktunya tiba)
-- Refresh token, logout, lupa/reset password, role/permission (admin vs karyawan)
+- Modul rekap (ikuti panduan "Cara Menambah Fitur/Modul Baru" di atas saat waktunya tiba)
+- Logika bisnis presensi (check-in/check-out dengan validasi GPS, penentuan status hadir dari jadwal divisi)
+- Alur approval ijin (perubahan status oleh approver, notifikasi)
+- Refresh token, logout, lupa/reset password
+- Pembatasan endpoint berdasarkan role & permission menu (RBAC enforcement) — tabelnya sudah ada, enforcement menyusul
 - Unit test
 - Dockerfile / deployment
 - Dokumentasi API (Swagger)

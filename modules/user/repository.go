@@ -1,6 +1,9 @@
 package user
 
-import "gorm.io/gorm"
+import (
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
 
 type Repository struct {
 	db *gorm.DB
@@ -16,17 +19,25 @@ func (r *Repository) FindAll() ([]User, error) {
 	return users, err
 }
 
-func (r *Repository) FindByID(id uint) (*User, error) {
+func (r *Repository) FindByID(id uuid.UUID) (*User, error) {
 	var u User
-	if err := r.db.First(&u, id).Error; err != nil {
+	if err := r.db.First(&u, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &u, nil
 }
 
-func (r *Repository) FindByEmail(email string) (*User, error) {
+func (r *Repository) FindByUsername(username string) (*User, error) {
 	var u User
-	if err := r.db.Where("email = ?", email).First(&u).Error; err != nil {
+	if err := r.db.Where("username = ?", username).First(&u).Error; err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (r *Repository) FindByKodeIdentitas(kodeIdentitas string) (*User, error) {
+	var u User
+	if err := r.db.Where("kode_identitas = ?", kodeIdentitas).First(&u).Error; err != nil {
 		return nil, err
 	}
 	return &u, nil
@@ -34,4 +45,12 @@ func (r *Repository) FindByEmail(email string) (*User, error) {
 
 func (r *Repository) Create(u *User) error {
 	return r.db.Create(u).Error
+}
+
+func (r *Repository) Update(u *User) error {
+	return r.db.Save(u).Error
+}
+
+func (r *Repository) Delete(id uuid.UUID) error {
+	return r.db.Delete(&User{}, "id = ?", id).Error
 }

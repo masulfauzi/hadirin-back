@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 
 	"hadirin-back/utils"
 )
@@ -33,13 +34,17 @@ func Protected(secret string) fiber.Handler {
 		if !ok {
 			return unauthorized(c, "Token tidak valid")
 		}
-		userID, ok := claims["user_id"].(float64)
+		userIDStr, ok := claims["user_id"].(string)
 		if !ok {
+			return unauthorized(c, "Token tidak valid")
+		}
+		userID, err := uuid.Parse(userIDStr)
+		if err != nil {
 			return unauthorized(c, "Token tidak valid")
 		}
 
 		// Simpan ID user agar bisa diambil handler via c.Locals("user_id")
-		c.Locals("user_id", uint(userID))
+		c.Locals("user_id", userID)
 
 		return c.Next()
 	}

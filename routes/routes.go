@@ -6,7 +6,14 @@ import (
 
 	"hadirin-back/config"
 	"hadirin-back/modules/auth"
+	"hadirin-back/modules/division"
+	"hadirin-back/modules/harilibur"
 	"hadirin-back/modules/health"
+	"hadirin-back/modules/ijin"
+	"hadirin-back/modules/karyawan"
+	"hadirin-back/modules/menu"
+	"hadirin-back/modules/presensi"
+	"hadirin-back/modules/role"
 	"hadirin-back/modules/user"
 )
 
@@ -20,8 +27,14 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	user.RegisterRoutes(api, userService, cfg)
 	auth.RegisterRoutes(api, userService, cfg)
 
-	// Modul berikutnya didaftarkan di sini, contoh:
-	// presensi.RegisterRoutes(api, db, cfg)
-	// rekap.RegisterRoutes(api, db, cfg)
-	// ijin.RegisterRoutes(api, db, cfg)
+	// division & karyawan didaftarkan lebih dulu karena service-nya
+	// dipakai (di-inject) oleh modul lain
+	divisionService := division.RegisterRoutes(api, db, cfg)
+	karyawanService := karyawan.RegisterRoutes(api, db, cfg, divisionService)
+
+	roleService := role.RegisterRoutes(api, db, cfg, userService)
+	menu.RegisterRoutes(api, db, cfg, roleService)
+	harilibur.RegisterRoutes(api, db, cfg, divisionService)
+	presensi.RegisterRoutes(api, db, cfg, karyawanService)
+	ijin.RegisterRoutes(api, db, cfg, karyawanService)
 }

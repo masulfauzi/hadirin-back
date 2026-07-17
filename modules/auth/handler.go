@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 
 	"hadirin-back/utils"
 )
@@ -15,13 +16,14 @@ func NewHandler(service *Service) *Handler {
 }
 
 type registerRequest struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	KodeIdentitas string  `json:"kode_identitas"`
+	Username      string  `json:"username"`
+	Email         *string `json:"email"`
+	Password      string  `json:"password"`
 }
 
 type loginRequest struct {
-	Email    string `json:"email"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -30,16 +32,16 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return utils.Error(c, fiber.StatusBadRequest, "Format request tidak valid")
 	}
-	if req.Name == "" || req.Email == "" {
-		return utils.Error(c, fiber.StatusBadRequest, "name dan email wajib diisi")
+	if req.KodeIdentitas == "" || req.Username == "" {
+		return utils.Error(c, fiber.StatusBadRequest, "kode_identitas dan username wajib diisi")
 	}
 	if len(req.Password) < 8 {
 		return utils.Error(c, fiber.StatusBadRequest, "password minimal 8 karakter")
 	}
 
-	newUser, err := h.service.Register(req.Name, req.Email, req.Password)
+	newUser, err := h.service.Register(req.KodeIdentitas, req.Username, req.Email, req.Password)
 	if err != nil {
-		return utils.Error(c, fiber.StatusConflict, "Email sudah terdaftar")
+		return utils.Error(c, fiber.StatusConflict, err.Error())
 	}
 
 	return utils.Success(c, fiber.StatusCreated, "Registrasi berhasil", newUser)
@@ -51,7 +53,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return utils.Error(c, fiber.StatusBadRequest, "Format request tidak valid")
 	}
 
-	token, loggedUser, err := h.service.Login(req.Email, req.Password)
+	token, loggedUser, err := h.service.Login(req.Username, req.Password)
 	if err != nil {
 		return utils.Error(c, fiber.StatusUnauthorized, err.Error())
 	}
@@ -63,7 +65,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 }
 
 func (h *Handler) Me(c *fiber.Ctx) error {
-	userID := c.Locals("user_id").(uint)
+	userID := c.Locals("user_id").(uuid.UUID)
 
 	currentUser, err := h.service.GetProfile(userID)
 	if err != nil {

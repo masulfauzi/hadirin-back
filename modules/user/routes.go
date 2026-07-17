@@ -13,4 +13,6 @@ func RegisterRoutes(router fiber.Router, service *Service, cfg *config.Config) {
 	// Group ini hanya bisa diakses dengan token JWT yang valid
 	users := router.Group("/users", middleware.Protected(cfg.JWTSecret))
 	users.Get("/", handler.GetUsers)
+	users.Get("/:id", handler.GetUser)
+	users.Delete("/:id", handler.DeleteUser)
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"hadirin-back/config"
@@ -20,16 +21,24 @@ func NewService(userService *user.Service, cfg *config.Config) *Service {
 	return &Service{userService: userService, cfg: cfg}
 }
 
-func (s *Service) Register(name, email, password string) (*user.User, error) {
+func (s *Service) Register(kodeIdentitas, username string, email *string, password string) (*user.User, error) {
+	if _, err := s.userService.GetUserByUsername(username); err == nil {
+		return nil, errors.New("username sudah terdaftar")
+	}
+	if _, err := s.userService.GetUserByKodeIdentitas(kodeIdentitas); err == nil {
+		return nil, errors.New("kode_identitas sudah terdaftar")
+	}
+
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
 	newUser := &user.User{
-		Name:     name,
-		Email:    email,
-		Password: string(hashed),
+		KodeIdentitas: kodeIdentitas,
+		Username:      username,
+		Email:         email,
+		Password:      string(hashed),
 	}
 	if err := s.userService.CreateUser(newUser); err != nil {
 		return nil, err
@@ -37,20 +46,23 @@ func (s *Service) Register(name, email, password string) (*user.User, error) {
 	return newUser, nil
 }
 
-func (s *Service) Login(email, password string) (string, *user.User, error) {
-	// Pesan error sengaja disamakan untuk email tak terdaftar maupun
-	// password salah, agar penyerang tidak bisa menebak email mana
+func (s *Service) Login(username, password string) (string, *user.User, error) {
+	// Pesan error sengaja disamakan untuk username tak terdaftar maupun
+	// password salah, agar penyerang tidak bisa menebak username mana
 	// yang terdaftar
-	loggedUser, err := s.userService.GetUserByEmail(email)
+	loggedUser, err := s.userService.GetUserByUsername(username)
 	if err != nil {
-		return "", nil, errors.New("email atau password salah")
+		return "", nil, errors.New("username atau password salah")
 	}
 	if bcrypt.CompareHashAndPassword([]byte(loggedUser.Password), []byte(password)) != nil {
-		return "", nil, errors.New("email atau password salah")
+		return "", nil, errors.New("username atau password salah")
+	}
+	if !loggedUser.IsActive {
+		return "", nil, errors.New("akun tidak aktif")
 	}
 
 	claims := jwt.MapClaims{
-		"user_id": loggedUser.ID,
+		"user_id": loggedUser.ID.String(),
 		"exp":     time.Now().Add(time.Duration(s.cfg.JWTExpireHours) * time.Hour).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -59,9 +71,13 @@ func (s *Service) Login(email, password string) (string, *user.User, error) {
 		return "", nil, err
 	}
 
+	if err := s.userService.UpdateLastLogin(loggedUser); err != nil {
+		return "", nil, err
+	}
+
 	return signed, loggedUser, nil
 }
 
-func (s *Service) GetProfile(id uint) (*user.User, error) {
+func (s *Service) GetProfile(id uuid.UUID) (*user.User, error) {
 	return s.userService.GetUserByID(id)
 }
