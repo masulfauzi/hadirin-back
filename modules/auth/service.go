@@ -9,24 +9,40 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"hadirin-back/config"
+	"hadirin-back/modules/karyawan"
+	"hadirin-back/modules/role"
 	"hadirin-back/modules/user"
 )
 
+// kodeRoleKaryawan adalah role default yang di-assign ke setiap user baru
+// lewat /auth/register (di-seed lewat migration 000017_seed_karyawan_role).
+const kodeRoleKaryawan = "KARYAWAN"
+
 type Service struct {
-	userService *user.Service
-	cfg         *config.Config
+	userService     *user.Service
+	karyawanService *karyawan.Service
+	roleService     *role.Service
+	cfg             *config.Config
 }
 
-func NewService(userService *user.Service, cfg *config.Config) *Service {
-	return &Service{userService: userService, cfg: cfg}
+func NewService(userService *user.Service, karyawanService *karyawan.Service, roleService *role.Service, cfg *config.Config) *Service {
+	return &Service{userService: userService, karyawanService: karyawanService, roleService: roleService, cfg: cfg}
 }
 
-func (s *Service) Register(kodeIdentitas, username string, email *string, password string) (*user.User, error) {
+func (s *Service) Register(kodeIdentitas, username string, email *string, password, namaLengkap string) (*user.User, error) {
 	if _, err := s.userService.GetUserByUsername(username); err == nil {
 		return nil, errors.New("username sudah terdaftar")
 	}
 	if _, err := s.userService.GetUserByKodeIdentitas(kodeIdentitas); err == nil {
 		return nil, errors.New("kode_identitas sudah terdaftar")
+	}
+	if _, err := s.karyawanService.GetByKodeIdentitas(kodeIdentitas); err == nil {
+		return nil, errors.New("kode_identitas sudah terdaftar sebagai karyawan")
+	}
+
+	karyawanRole, err := s.roleService.GetByKodeRole(kodeRoleKaryawan)
+	if err != nil {
+		return nil, errors.New("role karyawan belum tersedia, hubungi admin")
 	}
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -43,6 +59,23 @@ func (s *Service) Register(kodeIdentitas, username string, email *string, passwo
 	if err := s.userService.CreateUser(newUser); err != nil {
 		return nil, err
 	}
+
+	newKaryawan, err := s.karyawanService.CreateFromRegistration(kodeIdentitas, namaLengkap)
+	if err != nil {
+		// Kompensasi: rollback pembuatan user kalau baris karyawan gagal
+		// dibuat, supaya tidak ada user tanpa data karyawan pasangannya.
+		_ = s.userService.DeleteUser(newUser.ID)
+		return nil, err
+	}
+
+	if err := s.roleService.AssignUser(karyawanRole.ID, newUser.ID); err != nil {
+		// Kompensasi: rollback user + karyawan kalau assign role gagal,
+		// supaya tidak ada user yang lolos registrasi tanpa role.
+		_ = s.karyawanService.Delete(newKaryawan.ID)
+		_ = s.userService.DeleteUser(newUser.ID)
+		return nil, err
+	}
+
 	return newUser, nil
 }
 

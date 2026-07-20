@@ -25,11 +25,34 @@ func (s *Service) GetByID(id uuid.UUID) (*Karyawan, error) {
 	return s.repo.FindByID(id)
 }
 
+func (s *Service) GetByKodeIdentitas(kodeIdentitas string) (*Karyawan, error) {
+	return s.repo.FindByKodeIdentitas(kodeIdentitas)
+}
+
+// CreateFromRegistration membuat baris karyawan saat user mendaftar lewat
+// POST /auth/register, dengan division_id NULL karena divisi belum
+// ditentukan admin. Sengaja tidak lewat validate() karena division_id
+// wajib diisi untuk endpoint /karyawan biasa, tapi tidak di alur ini.
+func (s *Service) CreateFromRegistration(kodeIdentitas, namaLengkap string) (*Karyawan, error) {
+	k := &Karyawan{
+		KodeIdentitas:  kodeIdentitas,
+		NamaLengkap:    namaLengkap,
+		StatusKaryawan: "aktif",
+	}
+	if err := s.repo.Create(k); err != nil {
+		return nil, err
+	}
+	return k, nil
+}
+
 func (s *Service) validate(k *Karyawan) error {
 	if k.KodeIdentitas == "" || k.NamaLengkap == "" {
 		return errors.New("kode_identitas dan nama_lengkap wajib diisi")
 	}
-	if _, err := s.divisionService.GetByID(k.DivisionID); err != nil {
+	if k.DivisionID == nil {
+		return errors.New("division_id wajib diisi")
+	}
+	if _, err := s.divisionService.GetByID(*k.DivisionID); err != nil {
 		return errors.New("division_id tidak ditemukan")
 	}
 	return nil

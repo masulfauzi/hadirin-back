@@ -27,6 +27,14 @@ func (r *Repository) FindByID(id uuid.UUID) (*Karyawan, error) {
 	return &k, nil
 }
 
+func (r *Repository) FindByKodeIdentitas(kodeIdentitas string) (*Karyawan, error) {
+	var k Karyawan
+	if err := r.db.Where("kode_identitas = ?", kodeIdentitas).First(&k).Error; err != nil {
+		return nil, err
+	}
+	return &k, nil
+}
+
 func (r *Repository) Create(k *Karyawan) error {
 	return r.db.Create(k).Error
 }

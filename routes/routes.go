@@ -25,14 +25,16 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	// userService dibagi ke modul user dan auth
 	userService := user.NewService(user.NewRepository(db))
 	user.RegisterRoutes(api, userService, cfg)
-	auth.RegisterRoutes(api, userService, cfg)
 
-	// division & karyawan didaftarkan lebih dulu karena service-nya
-	// dipakai (di-inject) oleh modul lain
+	// division, karyawan & role didaftarkan lebih dulu karena service-nya
+	// dipakai (di-inject) oleh modul lain, termasuk auth (register user +
+	// karyawan + assign role karyawan sekaligus)
 	divisionService := division.RegisterRoutes(api, db, cfg)
 	karyawanService := karyawan.RegisterRoutes(api, db, cfg, divisionService)
-
 	roleService := role.RegisterRoutes(api, db, cfg, userService)
+
+	auth.RegisterRoutes(api, userService, karyawanService, roleService, cfg)
+
 	menu.RegisterRoutes(api, db, cfg, roleService)
 	harilibur.RegisterRoutes(api, db, cfg, divisionService)
 	presensi.RegisterRoutes(api, db, cfg, karyawanService)

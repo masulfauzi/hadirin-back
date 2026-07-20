@@ -20,6 +20,7 @@ type registerRequest struct {
 	Username      string  `json:"username"`
 	Email         *string `json:"email"`
 	Password      string  `json:"password"`
+	NamaLengkap   string  `json:"nama_lengkap"`
 }
 
 type loginRequest struct {
@@ -32,14 +33,14 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return utils.Error(c, fiber.StatusBadRequest, "Format request tidak valid")
 	}
-	if req.KodeIdentitas == "" || req.Username == "" {
-		return utils.Error(c, fiber.StatusBadRequest, "kode_identitas dan username wajib diisi")
+	if req.KodeIdentitas == "" || req.Username == "" || req.NamaLengkap == "" {
+		return utils.Error(c, fiber.StatusBadRequest, "kode_identitas, username, dan nama_lengkap wajib diisi")
 	}
 	if len(req.Password) < 8 {
 		return utils.Error(c, fiber.StatusBadRequest, "password minimal 8 karakter")
 	}
 
-	newUser, err := h.service.Register(req.KodeIdentitas, req.Username, req.Email, req.Password)
+	newUser, err := h.service.Register(req.KodeIdentitas, req.Username, req.Email, req.Password, req.NamaLengkap)
 	if err != nil {
 		return utils.Error(c, fiber.StatusConflict, err.Error())
 	}

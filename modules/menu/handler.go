@@ -42,6 +42,16 @@ func (h *Handler) GetAll(c *fiber.Ctx) error {
 	return utils.Success(c, fiber.StatusOK, "Berhasil mengambil data menu", menus)
 }
 
+func (h *Handler) GetMyMenus(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uuid.UUID)
+
+	menuTree, err := h.service.GetMenuForUser(userID)
+	if err != nil {
+		return utils.Error(c, fiber.StatusInternalServerError, "Gagal mengambil menu")
+	}
+	return utils.Success(c, fiber.StatusOK, "Berhasil mengambil menu", menuTree)
+}
+
 func (h *Handler) GetByID(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {

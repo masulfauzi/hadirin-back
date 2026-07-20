@@ -16,17 +16,16 @@ func NewHandler(service *Service) *Handler {
 }
 
 type upsertRequest struct {
-	KodeIdentitas  string    `json:"kode_identitas"`
-	NIK            *string   `json:"nik"`
-	NamaLengkap    string    `json:"nama_lengkap"`
-	DivisionID     uuid.UUID `json:"division_id"`
-	Jabatan        *string   `json:"jabatan"`
-	NoHP           *string   `json:"no_hp"`
-	Email          *string   `json:"email"`
-	Alamat         *string   `json:"alamat"`
-	TanggalMasuk   *string   `json:"tanggal_masuk"`
-	StatusKaryawan string    `json:"status_karyawan"`
-	FotoProfile    *string   `json:"foto_profile"`
+	KodeIdentitas  string     `json:"kode_identitas"`
+	NamaLengkap    string     `json:"nama_lengkap"`
+	DivisionID     *uuid.UUID `json:"division_id"`
+	Jabatan        *string    `json:"jabatan"`
+	NoHP           *string    `json:"no_hp"`
+	Email          *string    `json:"email"`
+	Alamat         *string    `json:"alamat"`
+	TanggalMasuk   *string    `json:"tanggal_masuk"`
+	StatusKaryawan string     `json:"status_karyawan"`
+	FotoProfile    *string    `json:"foto_profile"`
 }
 
 func (h *Handler) GetAll(c *fiber.Ctx) error {
@@ -57,7 +56,6 @@ func toModel(req upsertRequest) *Karyawan {
 	}
 	return &Karyawan{
 		KodeIdentitas:  req.KodeIdentitas,
-		NIK:            req.NIK,
 		NamaLengkap:    req.NamaLengkap,
 		DivisionID:     req.DivisionID,
 		Jabatan:        req.Jabatan,
@@ -101,6 +99,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 
 	updated := toModel(req)
 	updated.ID = existing.ID
+	updated.CreatedAt = existing.CreatedAt
 
 	if err := h.service.Update(updated); err != nil {
 		return utils.Error(c, fiber.StatusBadRequest, err.Error())

@@ -56,3 +56,11 @@ func (s *Service) AssignUser(roleID, userID uuid.UUID) error {
 func (s *Service) RevokeUser(roleID, userID uuid.UUID) error {
 	return s.repo.RevokeUser(roleID, userID)
 }
+
+func (s *Service) GetByKodeRole(kodeRole string) (*Role, error) {
+	return s.repo.FindByKodeRole(kodeRole)
+}
+
+func (s *Service) GetRoleIDsByUserID(userID uuid.UUID) ([]uuid.UUID, error) {
+	return s.repo.FindRoleIDsByUserID(userID)
+}

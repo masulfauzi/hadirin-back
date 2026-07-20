@@ -15,6 +15,7 @@ func RegisterRoutes(router fiber.Router, db *gorm.DB, cfg *config.Config, roleSe
 
 	g := router.Group("/menus", middleware.Protected(cfg.JWTSecret))
 	g.Get("/", handler.GetAll)
+	g.Get("/me", handler.GetMyMenus)
 	g.Get("/:id", handler.GetByID)
 	g.Post("/", handler.Create)
 	g.Put("/:id", handler.Update)

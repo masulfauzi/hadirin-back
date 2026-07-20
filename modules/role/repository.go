@@ -47,3 +47,17 @@ func (r *Repository) AssignUser(roleID, userID uuid.UUID) error {
 func (r *Repository) RevokeUser(roleID, userID uuid.UUID) error {
 	return r.db.Where("role_id = ? AND user_id = ?", roleID, userID).Delete(&UserRole{}).Error
 }
+
+func (r *Repository) FindByKodeRole(kodeRole string) (*Role, error) {
+	var role Role
+	if err := r.db.Where("kode_role = ?", kodeRole).First(&role).Error; err != nil {
+		return nil, err
+	}
+	return &role, nil
+}
+
+func (r *Repository) FindRoleIDsByUserID(userID uuid.UUID) ([]uuid.UUID, error) {
+	var roleIDs []uuid.UUID
+	err := r.db.Model(&UserRole{}).Where("user_id = ?", userID).Pluck("role_id", &roleIDs).Error
+	return roleIDs, err
+}
