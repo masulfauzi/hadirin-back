@@ -4,6 +4,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 
+	"hadirin-back/modules/role"
+	"hadirin-back/modules/user"
 	"hadirin-back/utils"
 )
 
@@ -26,6 +28,11 @@ type registerRequest struct {
 type loginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type meResponse struct {
+	user.User
+	Roles []role.Role `json:"roles"`
 }
 
 func (h *Handler) Register(c *fiber.Ctx) error {
@@ -68,10 +75,10 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 func (h *Handler) Me(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uuid.UUID)
 
-	currentUser, err := h.service.GetProfile(userID)
+	currentUser, roles, err := h.service.GetProfile(userID)
 	if err != nil {
 		return utils.Error(c, fiber.StatusNotFound, "User tidak ditemukan")
 	}
 
-	return utils.Success(c, fiber.StatusOK, "Berhasil mengambil profil", currentUser)
+	return utils.Success(c, fiber.StatusOK, "Berhasil mengambil profil", meResponse{User: *currentUser, Roles: roles})
 }

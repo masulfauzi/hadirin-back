@@ -111,6 +111,14 @@ func (s *Service) Login(username, password string) (string, *user.User, error) {
 	return signed, loggedUser, nil
 }
 
-func (s *Service) GetProfile(id uuid.UUID) (*user.User, error) {
-	return s.userService.GetUserByID(id)
+func (s *Service) GetProfile(id uuid.UUID) (*user.User, []role.Role, error) {
+	u, err := s.userService.GetUserByID(id)
+	if err != nil {
+		return nil, nil, err
+	}
+	roles, err := s.roleService.GetRolesByUserID(id)
+	if err != nil {
+		return nil, nil, err
+	}
+	return u, roles, nil
 }

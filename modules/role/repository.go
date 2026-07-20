@@ -61,3 +61,12 @@ func (r *Repository) FindRoleIDsByUserID(userID uuid.UUID) ([]uuid.UUID, error) 
 	err := r.db.Model(&UserRole{}).Where("user_id = ?", userID).Pluck("role_id", &roleIDs).Error
 	return roleIDs, err
 }
+
+func (r *Repository) FindRolesByUserID(userID uuid.UUID) ([]Role, error) {
+	roles := []Role{}
+	err := r.db.
+		Joins("JOIN user_roles ON user_roles.role_id = roles.id").
+		Where("user_roles.user_id = ?", userID).
+		Find(&roles).Error
+	return roles, err
+}

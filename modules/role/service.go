@@ -64,3 +64,7 @@ func (s *Service) GetByKodeRole(kodeRole string) (*Role, error) {
 func (s *Service) GetRoleIDsByUserID(userID uuid.UUID) ([]uuid.UUID, error) {
 	return s.repo.FindRoleIDsByUserID(userID)
 }
+
+func (s *Service) GetRolesByUserID(userID uuid.UUID) ([]Role, error) {
+	return s.repo.FindRolesByUserID(userID)
+}
